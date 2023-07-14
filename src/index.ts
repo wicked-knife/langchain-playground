@@ -1,17 +1,26 @@
-import * as dotenv from "dotenv";
-import { OpenAI } from "langchain";
+import { initializeAgentExecutorWithOptions } from "langchain/agents";
+import { SerpAPI } from "langchain/tools";
+import { Calculator } from "langchain/tools/calculator";
+import model from './model/OpenAI.ts';
 
-dotenv.config();
+const tools = [
+  new SerpAPI(process.env.SERPAPI_API_KEY, {
+    hl: "en",
+    gl: "us",
+  }),
+  new Calculator(),
+];
 
-const model = new OpenAI({
-  modelName: "gpt-3.5-turbo",
-  openAIApiKey: process.env.OPENAI_API_KEY, 
-}, {
-  basePath: 'https://ai.fakeopen.com/v1'
+const executor = await initializeAgentExecutorWithOptions(tools, model, {
+  agentType: "zero-shot-react-description",
 });
+console.log("Loaded agent.");
 
-const res = await model.call(
-  "What's a good idea for an application to build with GPT-3?"
-);
+const input =
+  "Who is the current President of the United States?" +
+  " What is the result when his age is divided by 3?";
+console.log(`Executing with input "${input}"...`);
 
-console.log(res);
+const result = await executor.call({ input });
+
+console.log(`Got output ${result.output}`);
